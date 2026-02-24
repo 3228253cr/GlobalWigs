@@ -2,43 +2,31 @@
 const SUPABASE_URL = 'https://xfkenicbdgwfsfjqadcq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhma2VuaWNiZGd3ZnNmanFhZGNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NzE4ODYsImV4cCI6MjA4NzQ0Nzg4Nn0.FvM3R7iu14YHrHFKJeJvV77RJ8ob6x37kBHmzPVrVwY';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function requireAuth() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        window.location.href = 'index.html';
-        return null;
-    }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return null; }
     return session;
 }
 
 async function getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await sb.auth.getUser();
     return user;
 }
 
 async function signOut() {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     window.location.href = 'index.html';
 }
 
 async function getLookupValues(category) {
-    const { data } = await supabase
-        .from('lookup_values')
-        .select('value, label')
-        .eq('category', category)
-        .eq('is_active', true)
-        .order('sort_order');
+    const { data } = await sb.from('lookup_values').select('value, label').eq('category', category).eq('is_active', true).order('sort_order');
     return data || [];
 }
 
 async function getActiveRecords(table) {
-    const { data } = await supabase
-        .from(table)
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
+    const { data } = await sb.from(table).select('*').eq('is_active', true).order('name');
     return data || [];
 }
 
