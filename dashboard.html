@@ -127,6 +127,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/lib.js"></script>
     <script src="js/config.js"></script>
     <script>
         const STATUS_MAP = {
@@ -206,21 +207,22 @@
             tbody.innerHTML = filtered.map(o => {
                 const st = STATUS_MAP[o.status] || { label: o.status, class: '' };
                 const pay = PAY_MAP[o.payment_status] || { label: o.payment_status, class: 'bg-secondary' };
-                const sym = CURRENCY_SYM[o.currency] || '$';
+                const sym = currencySymbol(o.currency);
                 const style = o.hair_style ? (STYLE_MAP[o.hair_style] || o.hair_style) : '-';
+                const id = parseInt(o.id, 10) || 0;
 
-                return `<tr class="order-row" onclick="window.location='order.html?id=${o.id}'" style="cursor:pointer">
-                    <td><span class="fw-bold text-primary">${o.order_number || '-'}</span></td>
-                    <td>${o.customers?.name || '-'} <small class="text-muted">${o.customers?.country || ''}</small></td>
-                    <td>${o.brand || '-'}</td>
-                    <td>${style}</td>
-                    <td>${o.cap_size || '-'}</td>
-                    <td>${o.order_date || '-'}</td>
+                return `<tr class="order-row" onclick="window.location='order.html?id=${id}'" style="cursor:pointer">
+                    <td><span class="fw-bold text-primary">${escapeHtml(o.order_number) || '-'}</span></td>
+                    <td>${escapeHtml(o.customers?.name) || '-'} <small class="text-muted">${escapeHtml(o.customers?.country)}</small></td>
+                    <td>${escapeHtml(o.brand) || '-'}</td>
+                    <td>${escapeHtml(style)}</td>
+                    <td>${escapeHtml(o.cap_size) || '-'}</td>
+                    <td>${escapeHtml(o.order_date) || '-'}</td>
                     <td class="fw-bold">${sym}${parseFloat(o.total_amount || 0).toFixed(0)}</td>
-                    <td><span class="badge ${st.class}">${st.label}</span></td>
-                    <td><span class="badge ${pay.class}">${pay.label}</span></td>
+                    <td><span class="badge ${escapeHtml(st.class)}">${escapeHtml(st.label)}</span></td>
+                    <td><span class="badge ${escapeHtml(pay.class)}">${escapeHtml(pay.label)}</span></td>
                     <td>
-                        <a href="order.html?id=${o.id}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
+                        <a href="order.html?id=${id}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
                             <i class="bi bi-pencil"></i>
                         </a>
                     </td>

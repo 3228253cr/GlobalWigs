@@ -78,6 +78,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/lib.js"></script>
     <script src="js/config.js"></script>
     <script>
         let modal;
@@ -111,19 +112,24 @@
                 return;
             }
 
-            tbody.innerHTML = filtered.map(c => `
+            tbody.innerHTML = filtered.map((c, i) => {
+                window.__customers = window.__customers || {};
+                window.__customers[c.id] = c;
+                const wa = sanitizePhoneForWa(c.whatsapp);
+                return `
                 <tr>
-                    <td class="fw-bold">${c.name}</td>
-                    <td>${c.phone || '-'} ${c.whatsapp ? `<a href="https://wa.me/${c.whatsapp.replace(/[^0-9]/g,'')}" target="_blank" class="text-success ms-1"><i class="bi bi-whatsapp"></i></a>` : ''}</td>
-                    <td>${c.email || '-'}</td>
-                    <td>${c.address || '-'}</td>
-                    <td>${c.country || '-'}</td>
+                    <td class="fw-bold">${escapeHtml(c.name)}</td>
+                    <td>${escapeHtml(c.phone) || '-'} ${wa ? `<a href="https://wa.me/${wa}" target="_blank" class="text-success ms-1"><i class="bi bi-whatsapp"></i></a>` : ''}</td>
+                    <td>${escapeHtml(c.email) || '-'}</td>
+                    <td>${escapeHtml(c.address) || '-'}</td>
+                    <td>${escapeHtml(c.country) || '-'}</td>
                     <td><span class="badge bg-primary">${orderCounts[c.id] || 0}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick='editCustomer(${JSON.stringify(c)})'><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick='editCustomer(window.__customers[${parseInt(c.id, 10) || 0}])'><i class="bi bi-pencil"></i></button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function openModal(cust = null) {
