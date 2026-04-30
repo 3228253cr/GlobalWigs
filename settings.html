@@ -81,6 +81,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/lib.js"></script>
     <script src="js/config.js"></script>
     <script>
         let entityModal, currentTable, editingId;
@@ -92,27 +93,36 @@
             await loadSuppliers();
         })();
 
+        const entityCache = { agents: {}, suppliers: {} };
+        window.openEntityFromCache = function (table, id) {
+            openEntityModal(table, entityCache[table][id] || null);
+        };
+
         async function loadAgents() {
             const { data } = await supabase.from('agents').select('*').eq('is_active', true).order('name');
+            entityCache.agents = {};
+            (data || []).forEach(a => { entityCache.agents[a.id] = a; });
             document.getElementById('agentsTable').innerHTML = (data || []).map(a => `
                 <tr>
-                    <td class="fw-bold">${a.name}</td>
-                    <td>${a.phone || '-'}</td>
-                    <td>${a.email || '-'}</td>
-                    <td><button class="btn btn-sm btn-outline-primary" onclick='openEntityModal("agents",${JSON.stringify(a)})'><i class="bi bi-pencil"></i></button></td>
+                    <td class="fw-bold">${escapeHtml(a.name)}</td>
+                    <td>${escapeHtml(a.phone) || '-'}</td>
+                    <td>${escapeHtml(a.email) || '-'}</td>
+                    <td><button class="btn btn-sm btn-outline-primary" onclick='openEntityFromCache("agents",${parseInt(a.id, 10) || 0})'><i class="bi bi-pencil"></i></button></td>
                 </tr>`).join('') || '<tr><td colspan="4" class="text-center py-3 text-muted">אין סוכנים</td></tr>';
         }
 
         async function loadSuppliers() {
             const { data } = await supabase.from('suppliers').select('*').eq('is_active', true).order('name');
+            entityCache.suppliers = {};
+            (data || []).forEach(s => { entityCache.suppliers[s.id] = s; });
             document.getElementById('suppliersTable').innerHTML = (data || []).map(s => `
                 <tr>
-                    <td class="fw-bold">${s.name}</td>
-                    <td>${s.contact_person || '-'}</td>
-                    <td>${s.phone || '-'}</td>
-                    <td>${s.email || '-'}</td>
-                    <td>${s.country || '-'}</td>
-                    <td><button class="btn btn-sm btn-outline-primary" onclick='openEntityModal("suppliers",${JSON.stringify(s)})'><i class="bi bi-pencil"></i></button></td>
+                    <td class="fw-bold">${escapeHtml(s.name)}</td>
+                    <td>${escapeHtml(s.contact_person) || '-'}</td>
+                    <td>${escapeHtml(s.phone) || '-'}</td>
+                    <td>${escapeHtml(s.email) || '-'}</td>
+                    <td>${escapeHtml(s.country) || '-'}</td>
+                    <td><button class="btn btn-sm btn-outline-primary" onclick='openEntityFromCache("suppliers",${parseInt(s.id, 10) || 0})'><i class="bi bi-pencil"></i></button></td>
                 </tr>`).join('') || '<tr><td colspan="6" class="text-center py-3 text-muted">אין ספקים</td></tr>';
         }
 
@@ -126,13 +136,13 @@
                 : (isAgent ? 'סוכן חדש' : 'ספק חדש');
 
             let html = `<div class="row g-3">
-                <div class="col-12"><label class="form-label">שם *</label><input type="text" id="ent_name" class="form-control" value="${entity?.name || ''}"></div>
-                <div class="col-6"><label class="form-label">טלפון</label><input type="text" id="ent_phone" class="form-control" value="${entity?.phone || ''}"></div>
-                <div class="col-6"><label class="form-label">אימייל</label><input type="email" id="ent_email" class="form-control" value="${entity?.email || ''}"></div>`;
+                <div class="col-12"><label class="form-label">שם *</label><input type="text" id="ent_name" class="form-control" value="${escapeHtml(entity?.name)}"></div>
+                <div class="col-6"><label class="form-label">טלפון</label><input type="text" id="ent_phone" class="form-control" value="${escapeHtml(entity?.phone)}"></div>
+                <div class="col-6"><label class="form-label">אימייל</label><input type="email" id="ent_email" class="form-control" value="${escapeHtml(entity?.email)}"></div>`;
 
             if (!isAgent) {
-                html += `<div class="col-6"><label class="form-label">איש קשר</label><input type="text" id="ent_contact" class="form-control" value="${entity?.contact_person || ''}"></div>
-                    <div class="col-6"><label class="form-label">ארץ</label><input type="text" id="ent_country" class="form-control" value="${entity?.country || ''}"></div>`;
+                html += `<div class="col-6"><label class="form-label">איש קשר</label><input type="text" id="ent_contact" class="form-control" value="${escapeHtml(entity?.contact_person)}"></div>
+                    <div class="col-6"><label class="form-label">ארץ</label><input type="text" id="ent_country" class="form-control" value="${escapeHtml(entity?.country)}"></div>`;
             }
             html += '</div>';
             document.getElementById('entityModalBody').innerHTML = html;
