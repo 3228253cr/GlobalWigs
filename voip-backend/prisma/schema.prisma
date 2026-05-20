@@ -1,0 +1,166 @@
+// GlobalWigs VoIP — internal MVP
+// Pool of foreign phone numbers temporarily assigned to roaming employees.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================================
+// Users — employees of GlobalWigs who can claim a roaming number
+// =========================================================================
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  role         UserRole @default(EMPLOYEE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  devices      Device[]
+  assignments  Assignment[]
+  callLogs     CallLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  EMPLOYEE
+  ADMIN
+}
+
+// =========================================================================
+// Devices — registered Android devices, one user can have multiple
+// Used to deliver FCM push for incoming calls
+// =========================================================================
+model Device {
+  id          String   @id @default(cuid())
+  userId      String
+  fcmToken    String   @unique
+  platform    String   @default("android")
+  model       String?
+  osVersion   String?
+  appVersion  String?
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("devices")
+}
+
+// =========================================================================
+// PhoneNumber — a number we own in the pool (across providers)
+// =========================================================================
+model PhoneNumber {
+  id                String          @id @default(cuid())
+  e164              String          @unique // +447700900123
+  countryIso2       String                  // GB, DE, IL
+  countryName       String
+  provider          NumberProvider
+  providerNumberSid String?         @unique // Twilio PN... SID or Voicenter ID
+  capabilities      Json                    // { voice: true, sms: false }
+  monthlyCostUsd    Decimal         @db.Decimal(10, 4)
+  status            NumberStatus    @default(AVAILABLE)
+  // When status == QUARANTINED, this is when it becomes AVAILABLE again
+  quarantineUntil   DateTime?
+  notes             String?
+  acquiredAt        DateTime        @default(now())
+  releasedAt        DateTime?
+
+  assignments       Assignment[]
+  callLogs          CallLog[]
+
+  @@index([status])
+  @@index([countryIso2, status])
+  @@map("phone_numbers")
+}
+
+enum NumberProvider {
+  TWILIO
+  VOICENTER
+  DIDWW
+}
+
+enum NumberStatus {
+  AVAILABLE    // free in the pool, ready to be assigned
+  ASSIGNED     // currently assigned to a user
+  QUARANTINED  // recently released, cooling off for QUARANTINE_DAYS
+  RETIRED      // released back to the carrier (no longer in pool)
+}
+
+// =========================================================================
+// Assignment — links a user to a number for a window of time
+// =========================================================================
+model Assignment {
+  id            String           @id @default(cuid())
+  userId        String
+  phoneNumberId String
+  startedAt     DateTime         @default(now())
+  endsAt        DateTime
+  releasedAt    DateTime?
+  status        AssignmentStatus @default(ACTIVE)
+  notes         String?
+
+  user        User        @relation(fields: [userId], references: [id])
+  phoneNumber PhoneNumber @relation(fields: [phoneNumberId], references: [id])
+
+  @@index([userId, status])
+  @@index([phoneNumberId, status])
+  @@map("assignments")
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  EXPIRED
+  RELEASED
+}
+
+// =========================================================================
+// CallLog — every inbound or outbound call routed through the system
+// =========================================================================
+model CallLog {
+  id              String        @id @default(cuid())
+  direction       CallDirection
+  fromE164        String
+  toE164          String
+  userId          String?
+  phoneNumberId   String?
+  providerCallSid String?       @unique
+  status          CallStatus    @default(INITIATED)
+  startedAt       DateTime      @default(now())
+  answeredAt      DateTime?
+  endedAt         DateTime?
+  durationSec     Int           @default(0)
+  priceUsd        Decimal?      @db.Decimal(10, 4)
+  metadata        Json?
+
+  user        User?        @relation(fields: [userId], references: [id])
+  phoneNumber PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([phoneNumberId, startedAt(sort: Desc)])
+  @@map("call_logs")
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  INITIATED
+  RINGING
+  IN_PROGRESS
+  COMPLETED
+  BUSY
+  NO_ANSWER
+  FAILED
+  CANCELED
+}
