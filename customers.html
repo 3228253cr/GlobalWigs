@@ -15,6 +15,7 @@
             <div class="d-flex align-items-center gap-3">
                 <a href="order.html" class="btn btn-sm btn-warning fw-bold"><i class="bi bi-plus-lg me-1"></i>הזמנה חדשה</a>
                 <a href="dashboard.html" class="text-white text-decoration-none"><i class="bi bi-list-ul me-1"></i>הזמנות</a>
+                <a href="dialer.html" class="text-white text-decoration-none"><i class="bi bi-telephone me-1"></i>חיוג</a>
                 <button class="btn btn-sm btn-outline-light" onclick="signOut()"><i class="bi bi-box-arrow-left"></i></button>
             </div>
         </div>
@@ -120,6 +121,7 @@
                     <td>${c.country || '-'}</td>
                     <td><span class="badge bg-primary">${orderCounts[c.id] || 0}</span></td>
                     <td>
+                        ${c.phone ? `<a class="btn btn-sm btn-outline-success me-1" href="dialer.html?to=${encodeURIComponent(c.phone)}" title="חייג"><i class="bi bi-telephone"></i></a>` : ''}
                         <button class="btn btn-sm btn-outline-primary me-1" onclick='editCustomer(${JSON.stringify(c)})'><i class="bi bi-pencil"></i></button>
                     </td>
                 </tr>
